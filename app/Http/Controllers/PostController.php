@@ -13,7 +13,7 @@ class PostController extends Controller
         DB::flushQueryLog();
         DB::enableQueryLog();
 
-        $posts = Post::query()->latest('published_at')->paginate(12);
+        $posts = Post::with('author')->latest('published_at')->simplePaginate(16);
 
         $posts->each(function (Post $post): void {
             $post->author;
@@ -24,21 +24,18 @@ class PostController extends Controller
             'queryCount' => count(DB::getQueryLog()),
         ]);
     }
+    
 
     public function report(): View
     {
         DB::flushQueryLog();
         DB::enableQueryLog();
-
-        $posts = Post::query()->latest('published_at')->limit(200)->get();
-
-        $posts->each(function (Post $post): void {
-            $post->author;
-            $post->category;
-            $post->tags;
-            $post->comments->count();
-        });
-
+    
+        $posts = Post::with('author', 'category', 'tags')
+            ->withCount('comments')
+            ->latest('published_at')
+            ->simplePaginate(200);
+    
         return view('posts.report', [
             'posts' => $posts,
             'queryCount' => count(DB::getQueryLog()),
